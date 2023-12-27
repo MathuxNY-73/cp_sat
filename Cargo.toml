@@ -10,12 +10,19 @@ keywords = ["constraint", "programming", "CP"]
 categories = ["api-bindings", "mathematics", "science"]
 readme = "README.md"
 
+[workspace]
+resolver = "2"
+
 [dependencies]
-prost = "0.8"
 bytes = "1.1.0"
 libc = "0.2.101"
 smallvec = { version = "1.6.1", default-features = false, features = ["union"]}
+prost = "0.12.3"
+tonic = "0.10.2"
 
 [build-dependencies]
-prost-build = { version = "0.8" }
 cc = "1.0"
+prost-build = { version = "0.12.3" }
+prost-types = "0.12.3"
+protoc-gen-prost = "0.2.3"
+protoc-gen-tonic = "0.3.0"

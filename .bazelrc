@@ -1,0 +1,15 @@
+# Enable Bzlmod for every Bazel command
+common --enable_bzlmod
+
+build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
+build --sandbox_add_mount_pair=/tmp
+# build:macos --host_cxxopt=-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib
+
+# # Use our custom-configured c++ toolchain
+build:macos --crosstool_top=//toolchain:arm64_clang_toolchain
+# Use --cpu as a differentiator
+build:macos --compiler=clang
+# Use the default Bazel C++ toolchain to build the tools used during
+# the build
+build:macos --host_crosstool_top=//toolchain:arm64_clang_toolchain
+

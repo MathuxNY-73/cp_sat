@@ -1,4 +1,6 @@
-use crate::{ffi, proto};
+use crate::ffi;
+use crate::proto;
+
 use proto::constraint_proto::Constraint as CstEnum;
 use smallvec::SmallVec;
 
@@ -329,7 +331,11 @@ impl CpModelBuilder {
     /// ```
     pub fn add_all_different(&mut self, vars: impl IntoIterator<Item = IntVar>) -> Constraint {
         self.add_cst(CstEnum::AllDiff(proto::AllDifferentConstraintProto {
-            vars: vars.into_iter().map(|v| v.0).collect(),
+            exprs: vars.into_iter().map(|v| proto::LinearExpressionProto {
+                vars: vec![v.0],
+                coeffs: vec![1],
+                ..proto::LinearExpressionProto::default()
+            }).collect(),
         }))
     }
 
@@ -550,9 +556,9 @@ impl CpModelBuilder {
         target: impl Into<LinearExpr>,
         exprs: impl IntoIterator<Item = impl Into<LinearExpr>>,
     ) -> Constraint {
-        self.add_cst(CstEnum::LinMin(proto::LinearArgumentProto {
-            target: Some(target.into().into()),
-            exprs: exprs.into_iter().map(|e| e.into().into()).collect(),
+        self.add_cst(CstEnum::LinMax(proto::LinearArgumentProto {
+            target: Some((-target.into()).into()),
+            exprs: exprs.into_iter().map(|e| (-e.into()).into()).collect(),
         }))
     }
 
@@ -669,6 +675,7 @@ impl CpModelBuilder {
             offset: expr.constant as f64,
             scaling_factor: 1.,
             domain: vec![],
+            ..proto::CpObjectiveProto::default()
         });
     }
 
@@ -698,6 +705,7 @@ impl CpModelBuilder {
             offset: -expr.constant as f64,
             scaling_factor: -1.,
             domain: vec![],
+            ..proto::CpObjectiveProto::default()
         });
     }
 
@@ -772,6 +780,7 @@ impl CpModelBuilder {
 /// Boolean variable identifier.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BoolVar(i32);
+
 impl BoolVar {
     /// Gets the solution value of the variable from a solution.
     ///
