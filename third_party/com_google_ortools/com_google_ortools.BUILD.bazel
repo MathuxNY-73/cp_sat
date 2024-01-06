@@ -1,9 +1,38 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
-cc_library(
-    name = "libortools",
-    srcs = glob(["lib/*.a", "lib/*.dylib"]),
-    hdrs = glob(["include/**/*.h", "include/**/*.inc"]),
-    includes = ["include"],
-    visibility = ["//visibility:public"],
+filegroup(
+    name = "all_files",
+    srcs = glob(["**"]),
 )
+
+cmake(
+    name = "libortools",
+    lib_source = ":all_files",
+    out_static_libs = ["libortools.a"],
+    out_shared_libs = ["libortools.so"],
+    visibility = ["//visibility:public"],
+    build_data = [
+        "@zlib",
+        "@com_google_re2//:all_files",
+        "@com_google_absl//:all_files",
+        "@scip//:libscip",
+        "@eigen//:eigen3",
+        "@bliss//:libbliss",
+        "@glpk//:glpk",
+        "@highs//:all_files",
+    ],
+    deps = [
+        "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//:protobuf_headers",
+        "@com_google_protobuf//:json",
+    ],
+)
+
+# cc_library(
+#     name = "libortools",
+#     srcs = glob(["lib/*.a", "lib/*.dylib"]),
+#     hdrs = glob(["include/**/*.h", "include/**/*.inc"]),
+#     includes = ["include"],
+#     visibility = ["//visibility:public"],
+# )

@@ -48,6 +48,9 @@
 
 /// Export of the CP SAT protobufs
 #[allow(missing_docs, rustdoc::broken_intra_doc_links, rustdoc::bare_urls)]
+// pub mod proto {
+//     include!(concat!(env!("OUT_DIR"), "/operations_research.sat.rs"));
+// }
 pub mod proto {
     pub use cp_model_proto::operations_research::sat::*;
     pub use sat_parameters_proto::operations_research::sat::*;

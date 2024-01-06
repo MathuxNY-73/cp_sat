@@ -1,33 +1,37 @@
 use crate::proto;
-use libc::c_char;
+use libc::size_t;
 use prost::Message;
-use std::ffi::CStr;
+use std::ffi::{CStr, c_char, c_uchar};
 
+#[link(name = "cp_sat_wrapper")]
 extern "C" {
     fn cp_sat_wrapper_solve(
-        model_buf: *const u8,
-        model_size: usize,
-        out_size: &mut usize,
-    ) -> *mut u8;
+        model_buf: *const c_uchar,
+        model_size: size_t,
+        out_size: *mut size_t,
+    ) -> *mut c_uchar;
     fn cp_sat_wrapper_solve_with_parameters(
-        model_buf: *const u8,
-        model_size: usize,
-        params_buf: *const u8,
-        params_size: usize,
-        out_size: &mut usize,
-    ) -> *mut u8;
-    fn cp_sat_wrapper_cp_model_stats(model_buf: *const u8, model_size: usize) -> *mut c_char;
+        model_buf: *const c_uchar,
+        model_size: size_t,
+        params_buf: *const c_uchar,
+        params_size: size_t,
+        out_size: *mut size_t,
+    ) -> *mut c_uchar;
+    fn cp_sat_wrapper_cp_model_stats(
+        model_buf: *const c_uchar,
+        model_size: size_t) -> *mut c_char;
     fn cp_sat_wrapper_cp_solver_response_stats(
-        response_buf: *const u8,
-        response_size: usize,
+        response_buf: *const c_uchar,
+        response_size: size_t,
         has_objective: bool,
     ) -> *mut c_char;
-    fn cp_sat_wrapper_validate_cp_model(model_buf: *const u8, model_size: usize) -> *mut c_char;
+    fn cp_sat_wrapper_validate_cp_model(
+        model_buf: *const c_uchar, model_size: size_t) -> *mut c_char;
     fn cp_sat_wrapper_solution_is_feasible(
-        model_buf: *const u8,
-        model_size: usize,
+        model_buf: *const c_uchar,
+        model_size: size_t,
         solution_buf: *const i64,
-        solution_size: usize,
+        solution_size: size_t,
     ) -> bool;
 }
 

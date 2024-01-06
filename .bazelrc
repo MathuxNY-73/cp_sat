@@ -2,7 +2,7 @@
 common --enable_bzlmod
 
 build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
-build --sandbox_add_mount_pair=/tmp
+# build --sandbox_add_mount_pair=/tmp
 # build:macos --host_cxxopt=-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib
 
 # # Use our custom-configured c++ toolchain

@@ -1024,3 +1024,20 @@ impl<T: Into<LinearExpr>> std::iter::FromIterator<T> for LinearExpr {
         res
     }
 }
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_new_bool_var() {
+        use crate::builder::{CpModelBuilder, IntVar};
+        use crate::proto::CpSolverStatus;
+
+        let mut model = CpModelBuilder::default();
+        let x = model.new_bool_var();
+        model.add_and([!x]);
+        let _x_integer: IntVar = x.into();
+        let response = model.solve();
+        assert_eq!(response.status(), CpSolverStatus::Optimal);
+        assert!(!x.solution_value(&response));
+    }
+}
