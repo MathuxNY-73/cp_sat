@@ -3,7 +3,7 @@ use libc::size_t;
 use prost::Message;
 use std::ffi::{CStr, c_char, c_uchar};
 
-#[link(name = "cp_sat_wrapper")]
+#[link(name = "cp-sat-wrapper")]
 extern "C" {
     fn cp_sat_wrapper_solve(
         model_buf: *const c_uchar,

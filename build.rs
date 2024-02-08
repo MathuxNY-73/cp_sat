@@ -14,14 +14,15 @@ fn main() {
     if std::env::var("DOCS_RS").is_err() {
         let ortools_prefix = std::env::var("ORTOOLS_PREFIX")
             .ok()
-            .unwrap_or_else(|| "/opt/ortools".into());
+            .unwrap_or_else(|| "/usr/local".into());
         println!("Antoine");
         cc::Build::new()
             .cpp(true)
             .flag("-std=c++17")
-            .file("src/cp_sat_wrapper.cc")
+            .file("src/cp-sat-wrapper.cc")
+            .include("src")
             .include(&[&ortools_prefix, "/include"].concat())
-            .include("/usr/local/Cellar/protobuf/25.1/include/google/protobuf/")
+            .include("/usr/local/Cellar/protobuf/25.2/include/google/protobuf/")
             .compile("cp_sat_wrapper.a");
 
         println!("cargo:rustc-link-lib=dylib=ortools");
