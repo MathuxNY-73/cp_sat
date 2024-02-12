@@ -22,10 +22,11 @@ fn main() {
             .file("src/cp-sat-wrapper.cc")
             .include("src")
             .include(&[&ortools_prefix, "/include"].concat())
-            .include("/usr/local/Cellar/protobuf/25.2/include/google/protobuf/")
+            .include("/opt/homebrew/Cellar/protobuf/25.2/include")
             .compile("cp_sat_wrapper.a");
 
         println!("cargo:rustc-link-lib=dylib=ortools");
+        println!("cargo:rustc-link-lib=dylib=protobuf");
         println!("cargo:rustc-link-search=native={}/lib", ortools_prefix);
     }
 }
