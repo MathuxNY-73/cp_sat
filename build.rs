@@ -1,6 +1,7 @@
 use prost_build;
 
 fn main() {
+    println!("cargo:rerun-if-changed=src/cp-sat-wrapper.cc");
     prost_build::compile_protos(
         // &["src/cp_model.proto", "src/sat_parameters.proto"],
         &[
@@ -18,7 +19,7 @@ fn main() {
         println!("Antoine");
         cc::Build::new()
             .cpp(true)
-            .flag("-std=c++17")
+            .flag("-std=c++20")
             .file("src/cp-sat-wrapper.cc")
             .include("src")
             .include(&[&ortools_prefix, "/include"].concat())

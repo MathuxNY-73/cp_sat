@@ -15,6 +15,7 @@ resolver = "2"
 
 [dependencies]
 bytes = "1.1.0"
+cxx = "1.0"
 env_logger = "0.11.1"
 libc = "0.2.151"
 log = "0.4.20"
@@ -24,6 +25,7 @@ tonic = "0.11.0"
 
 [build-dependencies]
 cc = "1.0"
+cxx-build = "1.0"
 prost-build = { version = "0.12.3" }
 prost-types = "0.12.3"
 protoc-gen-prost = "0.2.3"
