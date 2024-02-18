@@ -1,4 +1,8 @@
-use crate::{ffi, proto};
+use std::collections::HashMap;
+
+use crate::ffi;
+use crate::proto;
+
 use proto::constraint_proto::Constraint as CstEnum;
 use smallvec::SmallVec;
 
@@ -21,6 +25,7 @@ use smallvec::SmallVec;
 #[derive(Default, Debug)]
 pub struct CpModelBuilder {
     proto: proto::CpModelProto,
+    constant_to_index: HashMap<i64, usize>,
 }
 
 impl CpModelBuilder {
@@ -123,6 +128,71 @@ impl CpModelBuilder {
         IntVar(index)
     }
 
+    // TODO(MathuxNY-73): Provide an example.
+    /// Creates a new interval variable and returns the [IntervalVar] identifier.
+    pub fn new_interval_var(
+        &mut self,
+        start: impl Into<LinearExpr>,
+        size: impl Into<LinearExpr>,
+        end: impl Into<LinearExpr>
+    ) -> IntervalVar {
+        let presence = self.true_var();
+        self.new_optional_interval(start, size, end, presence)
+    }
+
+    // TODO(MathuxNY-73): Provide an example.
+    /// Creates a new interval variable with a fixed size and returns the [IntervalVar] identifier.
+    pub fn new_fixed_size_interval_var(
+        &mut self,
+        start: impl Into<LinearExpr>,
+        size: i64
+    ) -> IntervalVar {
+        let presence = self.true_var();
+        self.new_optional_fixed_size_interval(start, size, presence)
+    }
+
+    // TODO(MathuxNY-73): Provide an example.
+    /// Creates a new interval variable and returns the [IntervalVar] identifier.
+    pub fn new_optional_interval(
+            &mut self,
+            start: impl Into<LinearExpr>,
+            size: impl Into<LinearExpr>,
+            end: impl Into<LinearExpr>,
+            presence: BoolVar) -> IntervalVar {
+        let start = start.into();
+        let end = end.into();
+        let size = size.into();
+        let eq_cst = self.add_eq(start.clone() + size.clone(), end.clone());
+        self.add_cst_enforcement(eq_cst, [presence.0 as usize]);
+
+        let interval_cst = self.add_cst(CstEnum::Interval(
+            proto::IntervalConstraintProto {
+                start: Some(start.into()),
+                end: Some(end.into()),
+                size: Some(size.into())
+            }));
+        IntervalVar(interval_cst.0 as i32)
+    }
+
+    // TODO(MathuxNY-73): Provide an example.
+    /// Creates a new interval variable and returns the [IntervalVar] identifier.
+    pub fn new_optional_fixed_size_interval(
+            &mut self,
+            start: impl Into<LinearExpr>,
+            size: i64,
+            presence: BoolVar) -> IntervalVar {
+        let start = start.into();
+        let interval_cst = self.add_cst(CstEnum::Interval(
+            proto::IntervalConstraintProto {
+                start: Some(start.clone().into()),
+                end: Some((start + size).into()),
+                size: Some(LinearExpr::from(size).into())
+            }));
+        let interval_cst =
+            self.add_cst_enforcement(interval_cst, [presence.0 as usize]);
+        IntervalVar(interval_cst.0 as i32)
+    }
+
     /// Returns the name of a variable, empty string if not setted.
     ///
     /// # Example
@@ -183,8 +253,8 @@ impl CpModelBuilder {
     /// model.set_constraint_name(constraint, "or");
     /// assert_eq!("or", model.constraint_name(constraint));
     /// ```
-    pub fn set_constraint_name(&mut self, constraint: Constraint, name: &str) {
-        self.proto.constraints[constraint.0].name = name.into();
+    pub fn set_constraint_name(&mut self, constraint: impl Into<usize>, name: &str) {
+        self.proto.constraints[constraint.into()].name = name.into();
     }
 
     /// Adds a boolean OR constraint on a list of [BoolVar].
@@ -589,6 +659,16 @@ impl CpModelBuilder {
             exprs: exprs.into_iter().map(|e| e.into().into()).collect(),
         }))
     }
+
+    /// Adds a constraint that force the interval vars to not overlap.
+    /// Returns the [Constraint] identifier.
+    pub fn add_no_overlap(&mut self, vars: impl IntoIterator<Item = IntervalVar>) -> Constraint {
+        self.add_cst(CstEnum::NoOverlap( proto::NoOverlapConstraintProto {
+            intervals: vars.into_iter().map(|iv| iv.0 as i32).collect(),
+            ..Default::default()
+        } ))
+    }
+
     fn add_cst(&mut self, cst: CstEnum) -> Constraint {
         let index = self.proto.constraints.len();
         self.proto.constraints.push(proto::ConstraintProto {
@@ -596,6 +676,26 @@ impl CpModelBuilder {
             ..Default::default()
         });
         Constraint(index)
+    }
+
+    fn add_cst_enforcement(&mut self, cst: Constraint, enforcements: impl IntoIterator<Item = usize>) -> Constraint {
+        // TODO(MathuxNY-73): Converting from usize to i32 may be problematic. Let us add some Result.
+        self.proto.constraints[cst.0].enforcement_literal =
+            enforcements.into_iter().map(|i| i as i32).collect();
+        cst
+    }
+
+    fn index_from_constant(&mut self, value: i64) -> usize {
+        if !self.constant_to_index.contains_key(&value) {
+            let int_var = self.new_int_var([(value, value)]);
+            self.constant_to_index.insert(value, int_var.0 as usize);
+        }
+        self.constant_to_index[&value]
+    }
+
+    /// Access the True Constant.
+    pub fn true_var(&mut self) -> BoolVar {
+        BoolVar(self.index_from_constant(1) as i32)
     }
 
     /// Add a solution hint.
@@ -775,9 +875,32 @@ impl CpModelBuilder {
     }
 }
 
+/// Interval variable identifier.
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct IntervalVar(i32);
+
+impl Into<usize> for IntervalVar {
+    fn into(self) -> usize {
+        self.0 as usize
+    }
+}
+
+impl From<usize> for IntervalVar {
+    fn from(value: usize) -> Self {
+        IntervalVar(value as i32)
+    }
+}
+
+impl From<Constraint> for IntervalVar {
+    fn from(value: Constraint) -> Self {
+        IntervalVar::from(value.0)
+    }
+}
+
 /// Boolean variable identifier.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BoolVar(i32);
+
 impl BoolVar {
     /// Gets the solution value of the variable from a solution.
     ///
@@ -806,6 +929,7 @@ impl BoolVar {
         }
     }
 }
+
 impl std::ops::Not for BoolVar {
     type Output = Self;
     fn not(self) -> Self {
@@ -830,6 +954,7 @@ impl From<BoolVar> for IntVar {
         IntVar(bool_var.0)
     }
 }
+
 impl IntVar {
     /// Gets the solution value of the variable from a solution.
     ///
@@ -864,6 +989,12 @@ impl IntVar {
 /// Constraint identifier.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Constraint(usize);
+
+impl Into<usize> for Constraint {
+    fn into(self) -> usize {
+        self.0
+    }
+}
 
 /// A linear expression, used in several places in the
 /// [builder][CpModelBuilder].
