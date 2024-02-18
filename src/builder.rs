@@ -875,8 +875,8 @@ impl CpModelBuilder {
     }
 
     /// Solves the model with the given
-    /// [parameters][proto::SatParameters], and returns the
-    /// corresponding [proto::CpSolverResponse].
+    /// [params][proto::SatParameters] and registering the [observer] to be called by the solve
+    /// on every feasible solution found. Returns the corresponding [proto::CpSolverResponse].
     ///
     /// # Example
     ///
@@ -884,10 +884,23 @@ impl CpModelBuilder {
     /// # use cp_sat::builder::CpModelBuilder;
     /// # use cp_sat::proto::{CpSolverStatus, SatParameters};
     /// let model = CpModelBuilder::default();
-    /// let mut params = SatParameters::default();
-    /// params.max_deterministic_time = Some(1.);
-    /// let response = model.solve_with_parameters(&params);
+    /// let mut params = SatParameters {
+    ///     max_deterministic_time: Some(1.),
+    ///     enumerate_all_solutions: Some(true),
+    ///     ..Default::default()
+    /// };
+    /// let mut solution_cnt = 0;
+    /// let solution_limit = 5;
+    /// let response = model.solve_with_observer(|r| {
+    ///         solution_cnt += 1;
+    ///         if solution_cnt >= solution_limit {
+    ///             false  // Will stop the search.
+    ///         } else {
+    ///             true  // Will continue the search.
+    ///         }
+    ///     }, Some(&params));
     /// assert_eq!(response.status(), CpSolverStatus::Optimal);
+    /// assert_eq!(solution_cnt, 1);
     /// ```
     pub fn solve_with_observer<F>(
             &self, observer: F, params: Option<&proto::SatParameters>
@@ -895,6 +908,39 @@ impl CpModelBuilder {
     where F: FnMut(proto::CpSolverResponse) -> bool {
         ffi::solve_with_parameters_and_observer(self.proto(), observer, params)
     }
+}
+
+/// Format statistics
+pub fn print_solver_stats(response: &proto::CpSolverResponse, has_objective: bool) -> String {
+    let mut result = String::default();
+
+    result.push_str("CpSolverResponse summary:");
+    result.push_str(format!("\nstatus: {}", response.status().as_str_name()).as_str());
+
+    if has_objective && response.status() == proto::CpSolverStatus::Infeasible {
+        result.push_str(format!("\nobjective: {:.16e}", response.objective_value).as_str());
+        result.push_str(format!("\nbest_bound: {:.16e}", response.best_objective_bound).as_str());
+    } else {
+        result.push_str("\nobjective: NA");
+        result.push_str("\nbest_bound: NA");
+    }
+
+    result.push_str(format!("\nintegers: {}", response.num_integers).as_str());
+    result.push_str(format!("\nbooleans: {}", response.num_booleans).as_str());
+    result.push_str(format!( "\nconflicts: {}", response.num_conflicts).as_str());
+    result.push_str(format!("\nbranches: {}", response.num_branches).as_str());
+
+    result.push_str(format!("\npropagations: {}", response.num_binary_propagations).as_str());
+    result.push_str(format!("\ninteger_propagations: {}", response.num_integer_propagations).as_str());
+
+    result.push_str(format!("\nrestarts: {}", response.num_restarts).as_str());
+    result.push_str(format!( "\nlp_iterations: {}", response.num_lp_iterations).as_str());
+    result.push_str(format!( "\nwalltime: {}", response.wall_time).as_str());
+    result.push_str(format!("\nusertime: {}", response.user_time).as_str());
+    result.push_str(format!("\ndeterministic_time: {}", response.deterministic_time).as_str());
+    result.push_str(format!("\ngap_integral: {}", response.gap_integral).as_str());
+    result.push_str("\n");
+    result
 }
 
 /// Interval variable identifier.
@@ -1081,6 +1127,16 @@ impl<E: Into<LinearExpr>> std::ops::AddAssign<E> for LinearExpr {
         self.constant += rhs.constant;
     }
 }
+
+impl std::ops::MulAssign<i64> for LinearExpr {
+    fn mul_assign(&mut self, factor: i64) {
+        for coeff in self.coeffs.iter_mut() {
+            *coeff *= factor;
+        }
+        self.constant *= factor;
+    }
+}
+
 impl std::ops::Neg for LinearExpr {
     type Output = LinearExpr;
     fn neg(mut self) -> Self::Output {
@@ -1146,6 +1202,14 @@ impl<T: Into<LinearExpr>> std::ops::Sub<T> for LinearExpr {
     type Output = LinearExpr;
     fn sub(mut self, rhs: T) -> Self::Output {
         self -= rhs.into();
+        self
+    }
+}
+
+impl std::ops::Mul<i64> for LinearExpr {
+    type Output = LinearExpr;
+    fn mul(mut self, factor: i64) -> Self::Output {
+        self *= factor;
         self
     }
 }
