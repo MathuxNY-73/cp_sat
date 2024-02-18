@@ -873,6 +873,28 @@ impl CpModelBuilder {
     pub fn solve_with_parameters(&self, params: &proto::SatParameters) -> proto::CpSolverResponse {
         ffi::solve_with_parameters(self.proto(), params)
     }
+
+    /// Solves the model with the given
+    /// [parameters][proto::SatParameters], and returns the
+    /// corresponding [proto::CpSolverResponse].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use cp_sat::builder::CpModelBuilder;
+    /// # use cp_sat::proto::{CpSolverStatus, SatParameters};
+    /// let model = CpModelBuilder::default();
+    /// let mut params = SatParameters::default();
+    /// params.max_deterministic_time = Some(1.);
+    /// let response = model.solve_with_parameters(&params);
+    /// assert_eq!(response.status(), CpSolverStatus::Optimal);
+    /// ```
+    pub fn solve_with_observer<F>(
+            &self, observer: F, params: Option<&proto::SatParameters>
+    ) -> proto::CpSolverResponse
+    where F: FnMut(proto::CpSolverResponse) -> bool {
+        ffi::solve_with_parameters_and_observer(self.proto(), observer, params)
+    }
 }
 
 /// Interval variable identifier.
