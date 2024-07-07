@@ -16,10 +16,10 @@ resolver = "2"
 [dependencies]
 bytes = "1.1.0"
 env_logger = "0.11.1"
-libc = "0.2.151"
+libc = "0.2"
 log = "0.4.20"
 smallvec = { version = "1.6.1", default-features = false, features = ["union"]}
-prost = "0.12.3"
+prost = "0.12"
 tonic = "0.11.0"
 
 [build-dependencies]
