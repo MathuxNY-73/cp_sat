@@ -11,7 +11,7 @@ fn main() {
     if std::env::var("DOCS_RS").is_err() {
         let ortools_prefix = std::env::var("ORTOOLS_PREFIX")
             .ok()
-            .unwrap_or_else(|| "/usr/local".into());
+            .unwrap_or_else(|| "/Users/antoinepouillaude/Downloads/or-tools-9.11".into());
         cc::Build::new()
             .cpp(true)
             .flag("-std=c++20")
@@ -19,8 +19,10 @@ fn main() {
             .include(&[&ortools_prefix, "/include"].concat())
             .compile("cp_sat_wrapper.a");
 
+        println!("cargo:rerun-if-env-changed=ORTOOLS_PREFIX");
+        println!("cargo:rustc-link-lib=static=protobuf");
         println!("cargo:rustc-link-lib=dylib=ortools");
-        println!("cargo:rustc-link-lib=dylib=protobuf");
         println!("cargo:rustc-link-search=native={}/lib", ortools_prefix);
+        println!("cargo:rustc-link-arg=-Wl,-rpath,{}/lib", ortools_prefix);
     }
 }
