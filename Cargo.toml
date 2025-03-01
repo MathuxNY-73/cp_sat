@@ -16,15 +16,15 @@ resolver = "2"
 [dependencies]
 bytes = "1.10.0"
 env_logger = "0.11.6"
-libc = "0.2.169"
-log = "0.4.25"
+libc = "0.2.170"
+log = "0.4.26"
 smallvec = { version = "1.14.0", default-features = false, features = ["union"]}
 prost = "0.13.5"
 tonic = "0.12.3"
 
 [build-dependencies]
-cc = "1.2.14"
-cxx-build = "1.0.140"
+cc = "1.2.16"
+cxx-build = "1.0.142"
 prost-build = { version = "0.13.5" }
 prost-types = "0.13.5"
 protoc-gen-prost = "0.4.0"

@@ -1,0 +1,68 @@
+module(
+  name = "cp_sat",
+  version = "1.0",
+)
+
+bazel_dep(name = "rules_rust", version = "0.57.1")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust", dev_dependency = True)
+rust.toolchain(
+    edition = "2024",
+    extra_target_triples = [
+        "wasm32-unknown-unknown",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+    ],
+    versions = [
+        "1.85.0",
+    ],
+)
+use_repo(rust, "rust_toolchains")
+
+register_toolchains("@rust_toolchains//:all")
+
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crate_index",
+    cargo_lockfile = "//:Cargo.lock",
+    lockfile = "//:cargo-bazel.lock.json",
+    manifests = [
+        "//:Cargo.toml",
+    ],
+)
+
+# Copy-pasting build script dependencies is needed here as it appears that
+# `from_cargo` bazel_rust rule does not extract the `build-dependencies` from
+# the `Cargo.toml` manifest.
+crate.spec(
+  package = "cc",
+  version = "1.2.16",
+)
+crate.spec(
+  package = "cxx-build",
+  version = "1.0.142",
+)
+crate.spec(
+  package = "prost-build",
+  version = "0.13.5",
+)
+crate.spec(
+  package = "prost-types",
+  version = "0.13.5",
+)
+crate.spec(
+  package = "protoc-gen-prost",
+  version = "0.4.0",
+)
+crate.spec(
+  package = "protoc-gen-tonic",
+  version = "0.4.1",
+)
+crate.splicing_config(
+    repositories = ["crate_index"],
+    resolver_version = "2",
+)
+use_repo(crate, "crate_index")
+
+ortools = use_extension("//:extensions.bzl", "ortools")
+use_repo(ortools, "ortools-lib")
